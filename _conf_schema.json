@@ -1,0 +1,14 @@
+{
+  "api_key": {
+    "type": "string",
+    "description": "MemOS API密钥",
+    "hint": "从MemOS获取的API密钥",
+    "obvious_hint": true
+  },
+  "max_memory_length": {
+    "type": "int",
+    "description": "最大记忆长度",
+    "hint": "单条记忆的最大字符数",
+    "default": 1000
+  }
+}
