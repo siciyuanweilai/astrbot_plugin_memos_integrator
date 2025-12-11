@@ -129,8 +129,6 @@ class MemosIntegratorPlugin(Star):
         else:
             logger.info(f"未找到相关记忆，会话ID: {session_id}")
             
-        return req
-            
     @filter.on_llm_response()
     async def on_llm_response(self, event: AstrMessageEvent, resp: LLMResponse):
         """在LLM响应后保存对话到记忆"""
@@ -151,10 +149,10 @@ class MemosIntegratorPlugin(Star):
                 
             # 从响应中提取AI回复内容
             ai_response = resp.completion_text
-                
+
             if not ai_response:
                 logger.warning("未找到AI响应内容，跳过记忆保存")
-                return response_data
+                return
                 
             logger.debug(f"用户消息长度: {len(user_message)}")
             logger.debug(f"AI响应长度: {len(ai_response)}")
