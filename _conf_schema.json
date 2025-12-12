@@ -5,6 +5,12 @@
     "hint": "从MemOS获取的API密钥",
     "obvious_hint": true
   },
+  "base_url": {
+    "type": "string",
+    "description": "MemOS API基础URL",
+    "hint": "默认为 https://memos.memtensor.cn/api/openmem/v1",
+    "default": "https://memos.memtensor.cn/api/openmem/v1"
+  },
   "max_memory_length": {
     "type": "int",
     "description": "最大记忆长度",

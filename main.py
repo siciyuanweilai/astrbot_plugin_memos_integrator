@@ -1,21 +1,20 @@
 """
 MemOS记忆集成插件
-使用MemOS Python SDK实现记忆获取、注入和更新功能
+使用HTTP方式实现记忆获取、注入和更新功能
 """
 
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api.provider import ProviderRequest, LLMResponse
 from astrbot.api import AstrBotConfig, logger
-from .memory_manager import MemOS_Client, MemoryManager
+from .memory_manager import MemoryManager
 
 # 主插件类
-@register("astrbot_plugin_memos_integrator","zz6zz666", "MemOS记忆集成插件", "1.0.0")
+@register("astrbot_plugin_memos_integrator","zz6zz666", "MemOS记忆集成插件", "2.0.0")
 class MemosIntegratorPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         self.config = config
-        self.client = None
         self.memory_manager = None
         
     async def info(self) -> dict:
@@ -30,25 +29,27 @@ class MemosIntegratorPlugin(Star):
         """插件加载时执行"""
         try:
             # 验证配置
-            if not self.config.get("api_key", ""):
-                logger.error("MemOS配置无效，请检查API密钥")
+            api_key = self.config.get("api_key", "")
+            if not api_key:
+                logger.error("MemOS配置无效,请检查API密钥")
                 self.memory_manager = None
                 return False
-                
-            # 初始化客户端和管理器
-            self.client = MemOS_Client(
-                api_key=self.config.get("api_key", "")
-            )
-            
-            # 直接使用框架配置，无需创建额外的配置对象
+
+            # 获取配置
+            base_url = self.config.get("base_url", "https://memos.memtensor.cn/api/openmem/v1")
             self.max_memory_length = self.config.get("max_memory_length", 1000)
-            
-            self.memory_manager = MemoryManager(self.client)
+
+            # 初始化记忆管理器(合并了客户端功能)
+            self.memory_manager = MemoryManager(
+                api_key=api_key,
+                base_url=base_url
+            )
+
             logger.info("MemOS记忆集成插件已加载")
-            logger.debug(f"插件配置: 最大记忆长度={self.max_memory_length}")
+            logger.debug(f"插件配置: API地址={base_url}, 最大记忆长度={self.max_memory_length}")
             return True
         except Exception as e:
-            logger.error(f"初始化MemOS客户端失败: {e}")
+            logger.error(f"初始化MemOS记忆管理器失败: {e}")
             self.memory_manager = None
             return False
             

@@ -1,3 +1,3 @@
 # MemOS记忆集成插件依赖
-MemoryOS>=1.0.0
+# 使用HTTP API方式,无需安装MemoryOS SDK
 aiohttp>=3.8.0
