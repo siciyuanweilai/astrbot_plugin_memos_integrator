@@ -11,7 +11,7 @@ from astrbot.api import AstrBotConfig, logger
 from .memory_manager import MemoryManager
 
 # 主插件类
-@register("astrbot_plugin_memos_integrator","zz6zz666", "MemOS记忆集成插件", "1.0.0")
+@register("astrbot_plugin_memos_integrator","zz6zz666", "MemOS记忆集成插件", "1.1.0")
 class MemosIntegratorPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -70,7 +70,7 @@ class MemosIntegratorPlugin(Star):
 
         return conversation_id
         
-    @filter.on_llm_request()
+    @filter.on_llm_request(priority=-10000)  # 确保在其他插件（如内置群聊LTM插件）之后执行
     async def inject_memories(self, event: AstrMessageEvent, req: ProviderRequest):
         """在LLM请求前获取记忆并注入"""
 
@@ -151,8 +151,11 @@ class MemosIntegratorPlugin(Star):
             logger.info(f"收到LLM响应，会话ID: {session_id}, 对话ID: {conversation_id}")
 
             # 恢复原始prompt（避免记忆注入被保存到AstrBot对话历史）
+            # 同时用于保存到MemOS
+            user_message = None
             if session_id in self.original_prompts:
                 original_prompt = self.original_prompts[session_id]
+                user_message = original_prompt  # 使用原始prompt作为用户消息
 
                 # 从event中获取ProviderRequest对象
                 req = event.get_extra("provider_request")
@@ -166,8 +169,10 @@ class MemosIntegratorPlugin(Star):
                 # 清理已使用的原始prompt
                 del self.original_prompts[session_id]
 
-            # 获取用户消息和AI响应用于保存到MemOS
-            user_message = event.message_str
+            # 如果没有保存的原始prompt，则从event获取（作为兜底）
+            if not user_message:
+                user_message = event.message_str
+
             if not user_message:
                 logger.warning("未找到用户消息，跳过记忆保存")
                 return
