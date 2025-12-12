@@ -16,7 +16,8 @@ class MemosIntegratorPlugin(Star):
         super().__init__(context)
         self.config = config
         self.memory_manager = None
-        self.max_memory_length = 1000
+        self.memory_limit = 5
+        self.prompt_language = "auto"
 
         # 在 __init__ 中初始化记忆管理器
         try:
@@ -28,7 +29,8 @@ class MemosIntegratorPlugin(Star):
 
             # 获取配置
             base_url = self.config.get("base_url", "https://memos.memtensor.cn/api/openmem/v1")
-            self.max_memory_length = self.config.get("max_memory_length", 1000)
+            self.memory_limit = self.config.get("memory_limit", 5)
+            self.prompt_language = self.config.get("prompt_language", "auto")
 
             # 初始化记忆管理器
             self.memory_manager = MemoryManager(
@@ -37,7 +39,7 @@ class MemosIntegratorPlugin(Star):
             )
 
             logger.info("MemOS记忆集成插件已加载")
-            logger.info(f"插件配置: API地址={base_url}, 最大记忆长度={self.max_memory_length}")
+            logger.info(f"插件配置: API地址={base_url}, 记忆注入限制={self.memory_limit}, 提示词语言={self.prompt_language}")
         except Exception as e:
             logger.error(f"初始化MemOS记忆管理器失败: {e}")
             self.memory_manager = None
@@ -85,21 +87,26 @@ class MemosIntegratorPlugin(Star):
 
         # 获取记忆（使用session_id作为user_id）
         memories = await self.memory_manager.retrieve_relevant_memories(
-            user_message, session_id, conversation_id
+            user_message, session_id, conversation_id, limit=self.memory_limit
         )
-        
+
         logger.debug(f"检索到 {len(memories)} 条相关记忆，会话ID: {session_id}")
-        
+
         if memories:
             # 注入记忆到用户消息，使用新的记忆注入逻辑
-            # 检测语言，默认为中文
-            language = "zh"
-            if any(ord(c) < 128 for c in user_message):  # 如果包含ASCII字符，可能是英文
-                # 简单的语言检测，可以根据需要改进
-                non_ascii_count = sum(1 for c in user_message if ord(c) >= 128)
-                if non_ascii_count < len(user_message) * 0.3:  # 如果非ASCII字符少于30%
+            # 确定语言
+            if self.prompt_language == "auto":
+                # 自动检测语言，默认为中文
+                language = "zh"
+                # 改进的语言检测：只有当消息完全是英文（没有中文字符）时才使用英文
+                has_chinese = any('\u4e00' <= c <= '\u9fff' for c in user_message)
+                if not has_chinese and any(ord(c) < 128 and c.isalpha() for c in user_message):
+                    # 没有中文且有英文字母
                     language = "en"
-            
+            else:
+                # 使用用户配置的语言
+                language = self.prompt_language
+
             # 检测模型类型，默认为default
             model_type = "default"
             if hasattr(req, "model") and req.model:
@@ -107,15 +114,15 @@ class MemosIntegratorPlugin(Star):
                     model_type = "qwen"
                 elif "gemini" in req.model.lower():
                     model_type = "gemini"
-            
+
             logger.info(f"检测到语言: {language}, 模型类型: {model_type}")
-            
+
             # 使用新的记忆注入逻辑
             original_prompt = req.prompt
             req.prompt = await self.memory_manager.inject_memory_to_prompt(
                 user_message, memories, language, model_type
             )
-            
+
             # 使用debug级别记录注入后的完整prompt
             logger.debug(f"记忆注入后的完整prompt:\n{req.prompt}")
             logger.info(f"已为会话 {session_id} 注入 {len(memories)} 条记忆")

@@ -11,10 +11,30 @@
     "hint": "默认为 https://memos.memtensor.cn/api/openmem/v1",
     "default": "https://memos.memtensor.cn/api/openmem/v1"
   },
-  "max_memory_length": {
+  "memory_limit": {
     "type": "int",
-    "description": "最大记忆长度",
-    "hint": "单条记忆的最大字符数",
-    "default": 1000
+    "description": "记忆注入数量限制",
+    "hint": "每次最多注入多少条记忆到提示词中（默认5条）",
+    "default": 5
+  },
+  "prompt_language": {
+    "type": "select",
+    "description": "记忆提示词语言",
+    "hint": "选择记忆注入时使用的提示词语言",
+    "default": "auto",
+    "options": [
+      {
+        "label": "自动检测",
+        "value": "auto"
+      },
+      {
+        "label": "中文",
+        "value": "zh"
+      },
+      {
+        "label": "English",
+        "value": "en"
+      }
+    ]
   }
 }

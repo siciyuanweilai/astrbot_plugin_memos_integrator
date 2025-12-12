@@ -40,7 +40,9 @@
 {
   "api_key": "your_memos_api_key",
   "base_url": "https://memos.memtensor.cn/api/openmem/v1",
-  "max_memory_length": 1000
+  "max_memory_length": 1000,
+  "memory_limit": 5,
+  "prompt_language": "auto"
 }
 ```
 
@@ -48,7 +50,6 @@
 
 - `api_key` (必填): MemOS API密钥
 - `base_url` (可选): MemOS API基础URL,默认为官方地址
-- `max_memory_length` (可选): 记忆内容的最大长度,默认 1000
 
 ## 使用方法
 
