@@ -50,7 +50,9 @@ class CommandsHandler:
             lines.append("")
             lines.append("#### 🔍 偏好洞察区（系统推断）")
             for i, pref in enumerate(data["preference_detail_list"], 1):
-                lines.append(f"**{i}. {pref['preference']}**  ")
+                # 根据preference_type添加前缀
+                type_prefix = "[显式偏好]" if pref.get("preference_type") == "explicit_preference" else "[隐式偏好]"
+                lines.append(f"**{i}. {type_prefix} {pref['preference']}**  ")
                 lines.append(f"🕒 {ts_to_beijing(pref['create_time'])}  ")
                 lines.append(f"> 💡 **推理依据**：{pref['reasoning']}")
                 lines.append("")
@@ -58,6 +60,6 @@ class CommandsHandler:
         # --- 3. 始终渲染底部说明 ---
         note = data.get("preference_note")
         if note:
-            lines.append(f"*{note}*")
+            lines.append(f"{note}")
 
         return "\n".join(lines)
