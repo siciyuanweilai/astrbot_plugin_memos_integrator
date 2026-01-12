@@ -189,8 +189,27 @@ class MemoryManager:
                 if isinstance(memory_detail_list, list):
                     for memory in memory_detail_list:
                         if isinstance(memory, dict):
-                            # 提取记忆内容和元数据
-                            content = memory.get("memory_value", "")
+                            # --- 核心修改：利用 sources 判断角色并添加前缀 ---
+                            raw_content = memory.get("memory_value", "")
+                            
+                            # 获取来源信息
+                            sources = memory.get("sources", [])
+                            role_prefix = ""
+                            
+                            # 检查 sources 列表，根据 role 字段判断说话人
+                            if sources and isinstance(sources, list):
+                                first_source = sources[0]
+                                if isinstance(first_source, dict):
+                                    role = first_source.get("role", "")
+                                    if role == "assistant":
+                                        role_prefix = "[AI助手曾说] "
+                                    elif role == "user":
+                                        role_prefix = "[用户曾说] "
+                            
+                            # 拼接最终内容
+                            content = f"{role_prefix}{raw_content}"
+                            # ---------------------------------------------
+                            
                             memory_type = memory.get("memory_type", "LongTermMemory")
                             update_time = memory.get("update_time", 0)
 
