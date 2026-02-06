@@ -434,7 +434,7 @@ class MemosIntegratorPlugin(Star):
         # 如果是群聊，检索记忆时使用带昵称的消息内容
         search_query = user_message
         if is_group_message:
-            sender_name = event.sender.nickname if event.sender.nickname else (event.sender.user_id or "Unknown")
+            sender_name = event.get_sender_name() or "Unknown"
             search_query = f"{sender_name}: {user_message}"
 
         memories = await self.memory_manager.retrieve_relevant_memories(
@@ -551,7 +551,7 @@ class MemosIntegratorPlugin(Star):
 
             # 如果是群聊，保存记忆时在内容前加上发送者昵称
             if is_group_message:
-                sender_name = event.sender.nickname if event.sender.nickname else (event.sender.user_id or "Unknown")
+                sender_name = event.get_sender_name() or "Unknown"
                 # 避免重复添加 (万一original_prompts里已经有了)
                 if not user_message.startswith(f"{sender_name}:"):
                     user_message = f"{sender_name}: {user_message}"
@@ -559,6 +559,8 @@ class MemosIntegratorPlugin(Star):
             ai_response = resp.completion_text
             if not ai_response:
                 return
+
+            # --- 核心修改：缓存逻辑 ---
             
             # 如果upload_interval为1，直接上传，不使用缓存
             if self.upload_interval == 1:
