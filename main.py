@@ -433,17 +433,8 @@ class MemosIntegratorPlugin(Star):
         # 确定user_id：会话custom_user_id非空则使用会话的，否则使用Bot的custom_user_id，最后使用默认逻辑
         user_id = effective_config.custom_user_id if effective_config.custom_user_id else unified_msg_origin
 
-        # 判断消息类型（群聊或私聊）
-        is_group_message = event.get_message_type() == MessageType.GROUP_MESSAGE
-
-        # 如果是群聊，检索记忆时使用带昵称的消息内容
-        search_query = user_message
-        if is_group_message:
-            sender_name = event.get_sender_name() or "Unknown"
-            search_query = f"{sender_name}: {user_message}"
-
         memories = await self.memory_manager.retrieve_relevant_memories(
-            search_query, user_id, conversation_id, limit=self.memory_limit, api_key=api_key
+            user_message, user_id, conversation_id, limit=self.memory_limit, api_key=api_key
         )
 
         if memories:
@@ -454,6 +445,28 @@ class MemosIntegratorPlugin(Star):
                     language = "en"
             else:
                 language = self.prompt_language
+
+            # 判断消息类型（群聊或私聊）
+            is_group_message = event.get_message_type() == MessageType.GROUP_MESSAGE
+
+            # 如果是群聊，检索记忆时使用带昵称的消息内容
+            search_query = user_message
+            if is_group_message:
+                sender_name = event.get_sender_name() or "Unknown"
+                search_query = f"{sender_name}: {user_message}"
+
+            memories = await self.memory_manager.retrieve_relevant_memories(
+                search_query, user_id, conversation_id, limit=self.memory_limit, api_key=api_key
+            )
+
+            if memories:
+                if self.prompt_language == "auto":
+                    language = "zh"
+                    has_chinese = any('\u4e00' <= c <= '\u9fff' for c in user_message)
+                    if not has_chinese and any(ord(c) < 128 and c.isalpha() for c in user_message):
+                        language = "en"
+                else:
+                    language = self.prompt_language            
             
             # 根据配置选择注入类型
             injection_type = self.group_injection_type if is_group_message else self.private_injection_type
